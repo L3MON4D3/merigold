@@ -20,7 +20,20 @@
   in rec {
     packages = {
       default = packages.merigold_test;
-      merigold_test = nixosConfigurations.merigold.config.microvm.declaredRunner;
+      merigold_test = pkgs.writeShellApplication (let
+        runner = nixosConfigurations.merigold.config.microvm.declaredRunner;
+      in {
+        name = "setup-run-merigold-test";
+        runtimeInputs = with pkgs; [ coreutils ];
+        text = ''
+          if [[ $EUID -ne 0 ]]; then
+            printf "vm-setup needs root to add network-interfaces. Aborting."
+            exit 1
+          fi
+          ${runner}/bin/macvtap-up
+          ${runner}/bin/microvm-run
+        '';
+      });
     };
     nixosModules.merigold = import ./configuration.nix;
     nixosConfigurations.merigold = inputs.nixpkgs.lib.nixosSystem {
