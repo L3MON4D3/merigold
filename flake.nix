@@ -33,6 +33,11 @@
             inherit system self;
             mgconf = {
               hostname = "merigold-test";
+              address = "192.168.178.31/24";
+              mac = "02:b6:c0:23:7f:08";
+              host_if = "enp34s0";
+              host_macvtapname = "macvtap-mgtest";
+              gateway = "192.168.178.1";
             };
           };
         }

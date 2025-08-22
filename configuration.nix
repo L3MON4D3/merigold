@@ -11,6 +11,18 @@
 
   fileSystems."/var".options = ["noexec"];
 
+  systemd.network.enable = true;
+  systemd.network.networks."20-lan" = {
+    matchConfig.Type = "ether";
+    networkConfig = {
+      Address = mgconf.address;
+      Gateway = mgconf.gateway;
+      DNS = "1.1.1.1";
+      IPv6AcceptRA = false;
+      DHCP = false;
+    };
+  };
+
   microvm = {
     volumes = [ {
       mountPoint = "/var";
@@ -32,5 +44,17 @@
     # "qemu" has 9p built-in!
     hypervisor = "qemu";
     socket = "control.socket";
+
+    interfaces = [
+      {
+        type = "macvtap";
+        id = mgconf.host_macvtapname;
+        mac = mgconf.mac;
+        macvtap = {
+          link = mgconf.host_if;
+          mode = "bridge";
+        };
+      }
+    ];
   };
 }
