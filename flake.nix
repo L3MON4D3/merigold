@@ -51,6 +51,11 @@
               host_if = "enp34s0";
               host_macvtapname = "macvtap-mgtest";
               gateway = "192.168.178.1";
+              pubkey = import ./pubkey.nix;
+              guest_keyfile = "/home/simon/projects/vm-test/secrets/ed25519_key";
+              guest_pubkeyfile = "/home/simon/projects/vm-test/secrets/ed25519_key.pub";
+              share_store = true;
+              password = "";
             };
           };
         }
