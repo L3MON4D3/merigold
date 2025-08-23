@@ -1,5 +1,5 @@
 {
-  description = "NixOS in MicroVMs";
+  description = "nixos-config for externally facing VM.";
 
   nixConfig = {
     extra-substituters = [ "https://microvm.cachix.org" ];
