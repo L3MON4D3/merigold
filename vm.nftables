@@ -1,0 +1,112 @@
+# vm may:
+# * ethernet-contact only fritzbox, carmine and indigo.
+# * receive+answer:
+#   * ssh from indigo and carmine
+#   * https from indigo and carmine
+#   (although this is not completely precise, )
+# * communicate with indigo and carmine via ssh
+
+# Threat model: Attacker has full root access to the vm.
+# In that case there is no way to prevent access to the outside world that
+# would not also prevent all traffic to the webserver (the attacker can just
+# take over the server and set up communication over a tcp channel from the
+# same port, so indistinguishable at this level.)
+#
+# So, we at least block access to the home-network as much as possible.
+#
+# MAC: only contact router, indigo and carmine.
+# IP:
+# * outgoing ip packets to homenet only if:
+#   * protocol is tcp (don't need udp, we only want ssh and access to the webserver via https)
+#   * source port is 22 (ssh)
+#   * destination port is in the range of dynamic ports (all services on indigo/carmine cannot be contacted)
+#   * tcp_flags & (syn|ack) only has syn set, this should prevent the vm from creating tcp connections.
+#
+# In all, I hope that will prevent the vm from creating connections to my home network.
+
+
+# allow ethernet to and from fritzbox, carmine, indigo
+define allowed_macs = {0c:72:74:fc:b9:de,02:44:3a:85:35:ae,02:b5:0d:d2:90:a5}
+# allow ip to and from carmine,indigo.
+define allowed_ips = {192.168.178.20/32,192.168.178.21/32}
+# only allow sending data on local network to these ports.
+define dynamic_ports = 32768-60999
+# only allow communication to and from these vm ports.
+define vm_homenet_reachable_ports = {ssh,https}
+# forbid comunication with these ip ranges.
+# no request from the public internet will originate from any of these addresses.
+define private_ipv4_ranges = {
+	0.0.0.0/8,
+	10.0.0.0/8,
+	100.64.0.0/10,
+	127.0.0.0/8,
+	169.254.0.0/16,
+	172.16.0.0/12,
+	192.0.0.0/24,
+	192.0.0.0/29,
+	192.0.0.8/32,
+	192.0.0.9/32,
+	192.0.0.170/32,
+	192.0.0.171/32,
+	192.0.2.0/24,
+	192.31.196.0/24,
+	192.52.193.0/24,
+	192.88.99.0/24,
+	192.168.0.0/16,
+	192.175.48.0/24,
+	198.18.0.0/15,
+	198.51.100.0/24,
+	203.0.113.0/24,
+	240.0.0.0/4,
+	255.255.255.255/32
+}
+
+table netdev filtermacvtap {
+    chain filterin {
+        type filter hook ingress device "macvtap-mgtest" priority filter;
+
+        # don't allow ethernet from other hosts.
+		# so, this can only see requests and replies from other hosts.
+        ether saddr != $allowed_macs drop
+
+		# arp finds mac<->ip associations, this is ok since we only allow a few
+		# hosts anyway :)
+        arp operation {reply, request} accept
+
+        meta l4proto icmp accept
+
+        ip saddr $allowed_ips tcp dport $vm_homenet_reachable_ports accept
+        ip saddr $private_ipv4_ranges drop
+
+        # allow udp and tcp to outside world.
+        ip protocol {tcp,udp} accept
+
+        drop
+    }
+
+    chain filterout {
+        type filter hook egress device "macvtap-mgtest" priority filter;
+
+		# arp: allow requests to broadcast, but only allow responses from a few
+		# hosts by dropping ethernet from other hosts.
+        arp operation request accept
+        # drop all traffic to unnecessary hosts.
+        ether daddr != $allowed_macs drop
+        arp operation reply accept
+
+        meta l4proto icmp accept
+
+		# on localnet: only accept outgoing tcp packets if they don't attempt
+		# to establish a connection.
+		# ie. allow other local hosts to establish connections, but don't allow
+		# this one.
+        ip daddr $allowed_ips tcp sport $vm_homenet_reachable_ports tcp dport $dynamic_ports tcp flags & (syn|ack) != syn accept
+        ip daddr $private_ipv4_ranges drop
+
+        # allow all tcp traffic from external hosts.
+        ip protocol {tcp,udp} accept
+
+		# drop everything else.
+		drop
+    }
+}
