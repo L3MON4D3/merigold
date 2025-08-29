@@ -50,12 +50,14 @@
               mac = "02:b6:c0:23:7f:08";
               host_if = "enp34s0";
               host_macvtapname = "macvtap-mgtest";
-              gateway = "192.168.178.1";
+              gateway_ip = "192.168.178.1";
+              gateway_mac = "0c:72:74:fc:b9:de";
               pubkey = import ./pubkey.nix;
               guest_keyfile = "/home/simon/projects/vm-test/secrets/ed25519_key";
               guest_pubkeyfile = "/home/simon/projects/vm-test/secrets/ed25519_key.pub";
               share_store = true;
               password = "";
+              systemPackages = with pkgs; [dig arp-scan];
             };
           };
         }
