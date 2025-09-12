@@ -108,10 +108,10 @@ in {
     extraConfig =
     # caddy
     ''
-      nix-cache.internal nix-cache.l3mon4.de {
+      nix-cache.l3mon4.de nix-cache.${mgconf.hostname}.internal {
         redir https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
       }
-      nix-tarballs.internal nix-tarballs.l3mon4.de {
+      nix-tarballs.l3mon4.de nix-tarballs.${mgconf.hostname}.internal {
         redir https://l3mon4d3-nix-tarballs.s3.eu-central-003.backblazeb2.com{uri}
       }
     '';

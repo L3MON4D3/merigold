@@ -31,7 +31,7 @@
       host_if = "${lan.peers.carmine.phys_interface}";
       host_macvtapname = "macvtap-mgtest";
       gateway_ip = "${lan.gateway_peer.address}";
-      gateway_mac = "${lan.gateway_peer.mac_address}";
+      gateway_mac = "${lan.gateway_peer.mac}";
       localnet_allowlist = [
         lan.peers.carmine
       ];
@@ -45,7 +45,7 @@
       control_socket = "${vm_runtimedir}/control.socket";
     };
     vm_nftable = mgconf: pkgs.writeText "vm-nftable" (''
-      define allowed_macs = {${pkgs.lib.strings.concatMapStrings (host: "${host.mac},") mgconf.localnet_allowlist}}
+      define allowed_macs = {${mgconf.gateway_mac}, ${pkgs.lib.strings.concatMapStrings (host: "${host.mac},") mgconf.localnet_allowlist}}
       define allowed_ips = {${pkgs.lib.strings.concatMapStrings (host: "${host.address},") mgconf.localnet_allowlist}}
       # hardcode this for now.
       # verify that this matches `sysctl net.ipv4.ip_local_port_range` for all allowed hosts!!!
@@ -75,6 +75,7 @@
           nft delete table netdev ${mgconf.host_macvtapname}
         '';
       });
+      test-ruleset = vm_nftable mgconf;
     };
     nixosModules = {
       merigold = import ./configuration.nix;
