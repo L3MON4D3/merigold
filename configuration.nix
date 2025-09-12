@@ -12,7 +12,7 @@ in {
     volumes = [
       {
         mountPoint = "/var";
-        image = "var.img";
+        image = "${mgconf.img_path}";
         # 1_000_000 MB
         # 1TB
         size = 256;
@@ -30,7 +30,7 @@ in {
     };
 
     hypervisor = "qemu";
-    socket = "control.socket";
+    socket = "${mgconf.control_socket}";
 
     interfaces = [
       {
@@ -105,9 +105,23 @@ in {
 
   services.caddy = {
     enable = true;
-    virtualHosts."nix-cache.internal".extraConfig = ''
-      respond "Hello, world!"
+    extraConfig =
+    # caddy
+    ''
+      nix-cache.internal nix-cache.l3mon4.de {
+        redir https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
+      }
+      nix-tarballs.internal nix-tarballs.l3mon4.de {
+        redir https://l3mon4d3-nix-tarballs.s3.eu-central-003.backblazeb2.com{uri}
+      }
     '';
+    # virtualHosts = {
+      # "nix-cache.internal".extraConfig =
+      # # caddy
+      # ''
+        # redir https://s3.eu-central-003.backblazeb2.com/l3mon4d3-nix-tarballs{uri}
+      # '';
+    # };
   };
 
   networking.firewall.enable = true;
