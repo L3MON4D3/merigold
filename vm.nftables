@@ -46,9 +46,9 @@ define private_ipv4_ranges = {
 	255.255.255.255/32
 }
 
-table netdev TABLENAME_PLACEHOLDER {
+table netdev DEVICENAME_PLACEHOLDER {
     chain filterin {
-        type filter hook ingress device "macvtap-mgtest" priority filter;
+        type filter hook ingress device "DEVICENAME_PLACEHOLDER" priority filter;
 
         # don't allow ethernet from other hosts.
 		# so, this can only see requests and replies from other hosts.
@@ -71,7 +71,7 @@ table netdev TABLENAME_PLACEHOLDER {
     }
 
     chain filterout {
-        type filter hook egress device "macvtap-mgtest" priority filter;
+        type filter hook egress device "DEVICENAME_PLACEHOLDER" priority filter;
 
 		# arp: allow requests to broadcast, but only allow responses from a few
 		# hosts by dropping ethernet from other hosts.

@@ -44,14 +44,13 @@
       img_path = "${vm_runtimedir}/var.img";
       control_socket = "${vm_runtimedir}/control.socket";
     };
-    vm_nftable = pkgs.writeText "vm-nftable" (''
+    vm_nftable = mgconf: pkgs.writeText "vm-nftable" (''
       define allowed_macs = {${pkgs.lib.strings.concatMapStrings (host: "${host.mac},") mgconf.localnet_allowlist}}
       define allowed_ips = {${pkgs.lib.strings.concatMapStrings (host: "${host.address},") mgconf.localnet_allowlist}}
       # hardcode this for now.
       # verify that this matches `sysctl net.ipv4.ip_local_port_range` for all allowed hosts!!!
       define dynamic_ports = 32768-60999
-      define tablename = ${mgconf.host_macvtapname}
-    '' + builtins.readFile ./vm.nftables);
+    '' + (builtins.replaceStrings ["DEVICENAME_PLACEHOLDER"] [mgconf.host_macvtapname] (builtins.readFile ./vm.nftables)));
   in rec {
     packages = {
       default = packages.merigold_test;
@@ -71,12 +70,15 @@
           chown microvm:kvm ${vm_runtimedir} -R
 
           ${runner}/bin/macvtap-up
-          nft -f ${vm_nftable}
+          nft -f ${vm_nftable mgconf}
           sudo -u microvm ${runner}/bin/microvm-run
+          nft delete table netdev ${mgconf.host_macvtapname}
         '';
       });
     };
-    nixosModules.merigold = import ./configuration.nix;
+    nixosModules = {
+      merigold = import ./configuration.nix;
+    };
     nixosConfigurations.merigold = inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
@@ -90,5 +92,6 @@
         }
       ];
     };
+    lib.mkRuleset = vm_nftable;
   });
 }

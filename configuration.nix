@@ -126,5 +126,6 @@ in {
 
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [443];
+  networking.firewall.allowedUDPPorts = lib.mkForce [];
   networking.nftables.enable = true;
 }
