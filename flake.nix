@@ -40,7 +40,7 @@
       guest_pubkeyfile = "${vm_runtimedir}/secrets/ed25519_key.pub";
       share_store = true;
       password = ""; # set to null on production server!!
-      systemPackages = with pkgs; [dig arp-scan]; # remove for production.
+      systemPackages = with pkgs; [ dig arp-scan neovim ]; # remove for production.
       img_path = "${vm_runtimedir}/var.img";
       control_socket = "${vm_runtimedir}/control.socket";
     };

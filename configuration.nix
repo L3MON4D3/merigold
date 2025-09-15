@@ -110,25 +110,24 @@ in {
     ''
       # don't redir .well-known so caddy can do automatic ACME.
       nix-cache.l3mon4.de nix-cache.${mgconf.hostname}.internal {
+        log {
+          level INFO
+        }
         @not-well-known {
           not path /.well-known
         }
         redir @not-well-known https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
       }
       nix-tarballs.l3mon4.de nix-tarballs.${mgconf.hostname}.internal {
+        log {
+          level INFO
+        }
         @not-well-known {
           not path /.well-known
         }
         redir @not-well-known https://l3mon4d3-nix-tarballs.s3.eu-central-003.backblazeb2.com{uri}
       }
     '';
-    # virtualHosts = {
-      # "nix-cache.internal".extraConfig =
-      # # caddy
-      # ''
-        # redir https://s3.eu-central-003.backblazeb2.com/l3mon4d3-nix-tarballs{uri}
-      # '';
-    # };
   };
 
   networking.firewall.enable = true;
