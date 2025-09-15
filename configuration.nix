@@ -108,11 +108,18 @@ in {
     extraConfig =
     # caddy
     ''
+      # don't redir .well-known so caddy can do automatic ACME.
       nix-cache.l3mon4.de nix-cache.${mgconf.hostname}.internal {
-        redir https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
+        @not-well-known {
+          not path /.well-known
+        }
+        redir @not-well-known https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
       }
       nix-tarballs.l3mon4.de nix-tarballs.${mgconf.hostname}.internal {
-        redir https://l3mon4d3-nix-tarballs.s3.eu-central-003.backblazeb2.com{uri}
+        @not-well-known {
+          not path /.well-known
+        }
+        redir @not-well-known https://l3mon4d3-nix-tarballs.s3.eu-central-003.backblazeb2.com{uri}
       }
     '';
     # virtualHosts = {
@@ -125,7 +132,7 @@ in {
   };
 
   networking.firewall.enable = true;
-  networking.firewall.allowedTCPPorts = [443];
+  networking.firewall.allowedTCPPorts = [ 443 80 ];
   networking.firewall.allowedUDPPorts = lib.mkForce [];
   networking.nftables.enable = true;
 }
