@@ -10,11 +10,11 @@
 # IP:
 # * outgoing ip packets to homenet only if:
 #   * protocol is tcp (don't need udp, we only want ssh and access to the webserver via https)
-#   * source port is 22 (ssh)
 #   * destination port is in the range of dynamic ports (all services on indigo/carmine cannot be contacted)
-#   * tcp_flags & (syn|ack) only has syn set, this should prevent the vm from creating tcp connections.
+#   * tcp_flags & (syn|ack) only has syn set (this should prevent the vm from creating tcp connections).
 #
-# In all, I hope that will prevent the vm from creating connections to my home network.
+# In all, I hope these restrictions will prevent the vm from creating
+# connections to my home network, even if it is compromised.
 
 # only allow communication to and from these vm ports.
 define vm_homenet_reachable_ports = {ssh,https,http}
