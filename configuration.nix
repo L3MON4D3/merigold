@@ -2,12 +2,17 @@
 
 let
   crednames = {
-    root_pw_hashed = "root_pw_hashed";
     host_key = "host_key";
     host_pubkey = "host_pubkey";
+    pds_env = "pds_env";
   };
   credfile = credname: "/sys/firmware/qemu_fw_cfg/by_name/opt/io.systemd.credentials/${credname}/raw";
 in {
+  imports = [
+    ./profiles/pds.nix
+    ./profiles/mail.nix
+    ./profiles/secrets.nix
+  ];
   microvm = {
     volumes = [
       {
@@ -25,8 +30,10 @@ in {
     } ] else [];
 
     credentialFiles = {
-      ${crednames.host_key} = mgconf.guest_keyfile; 
-      ${crednames.host_pubkey} = mgconf.guest_pubkeyfile; 
+      ${config.l3mon.credentials.host_key.name} = mgconf.guest_keyfile;
+      ${config.l3mon.credentials.host_pubkey.name} = mgconf.guest_pubkeyfile;
+      ${config.l3mon.credentials.pds_env.name} = mgconf.pds_env;
+      ${config.l3mon.credentials.smtp_password.name} = mgconf.smtp_passwordfile;
     };
 
     hypervisor = "qemu";
@@ -47,7 +54,7 @@ in {
 
   networking.hostName = mgconf.hostname;
 
-  fileSystems."/var".options = ["noexec"];
+  fileSystems."/var".options = [ "noexec" ];
 
   systemd.network.enable = true;
   systemd.network.networks."20-lan" = {
@@ -68,7 +75,7 @@ in {
 
   services.openssh = {
     enable = true;
-    ports = [22];
+    ports = [ mgconf.ports.ssh ];
     settings = {
       PasswordAuthentication = false;
       AllowUsers = ["root"];
@@ -81,16 +88,15 @@ in {
     deps = [];
     text = ''
       mkdir -p /etc/ssh/
-      install -m 600 -o root ${credfile crednames.host_key} "/etc/ssh/ssh_host_ed25519_key"
-      install -m 644 -o root ${credfile crednames.host_pubkey} "/etc/ssh/ssh_host_ed25519_key.pub"
+      install -m 600 -o root ${config.l3mon.credentials.host_key.file} "/etc/ssh/ssh_host_ed25519_key"
+      install -m 644 -o root ${config.l3mon.credentials.host_pubkey.file} "/etc/ssh/ssh_host_ed25519_key.pub"
     '';
   };
   users.users.root = {
     openssh.authorizedKeys.keys = [
       mgconf.pubkey
     ];
-    # hashedPasswordFile = "/sys/firmware/qemu_fw_cfg/by_name/opt/io.systemd.credentials/${crednames.root_pw_hashed}/raw";
-    # allow login only via sshd.
+    # set to null in production => only ssh login.
     password = mgconf.password;
   };
 
@@ -118,6 +124,7 @@ in {
         }
         redir @not-well-known https://l3mon4d3-nix-cache.s3.eu-central-003.backblazeb2.com{uri}
       }
+
       nix-tarballs.l3mon4.de nix-tarballs.${mgconf.hostname}.internal {
         log {
           level INFO
@@ -131,7 +138,7 @@ in {
   };
 
   networking.firewall.enable = true;
-  networking.firewall.allowedTCPPorts = [ 443 80 ];
+  networking.firewall.allowedTCPPorts = with mgconf.ports; [ http https ];
   networking.firewall.allowedUDPPorts = lib.mkForce [];
   networking.nftables.enable = true;
 }

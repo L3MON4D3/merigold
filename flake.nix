@@ -36,13 +36,29 @@
         lan.peers.carmine
       ];
       pubkey = os_data.pubkey; # allowed ssh-pubkey
+
       guest_keyfile = "${vm_runtimedir}/secrets/ed25519_key";
       guest_pubkeyfile = "${vm_runtimedir}/secrets/ed25519_key.pub";
+      pds_env = "${vm_runtimedir}/secrets/pds_env";
+      smtp_passwordfile = "${vm_runtimedir}/secrets/mailbox_smtp";
+
       share_store = true;
       password = ""; # set to null on production server!!
       systemPackages = with pkgs; [ dig arp-scan neovim ]; # remove for production.
       img_path = "${vm_runtimedir}/var.img";
       control_socket = "${vm_runtimedir}/control.socket";
+
+      ports = {
+        ssh = 22;
+        http = 80;
+        https = 443;
+
+        pds = 4096;
+      };
+
+      ids = {
+        msmtp-user = 20001;
+      };
     };
     vm_nftable = mgconf: pkgs.writeText "vm-nftable" (''
       define allowed_macs = {${mgconf.gateway_mac}, ${pkgs.lib.strings.concatMapStrings (host: "${host.mac},") mgconf.localnet_allowlist}}
@@ -94,5 +110,12 @@
       ];
     };
     lib.mkRuleset = vm_nftable;
+    devShells.default = pkgs.mkShell {
+      packages = with pkgs; [
+        openssl
+        openssh
+        just
+      ];
+    };
   });
 }
